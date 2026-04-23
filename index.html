@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>小白保衛戰</title>
+    <style>
+        :root {
+            --bg: radial-gradient(circle at 20% 20%, #22344a 0%, #0e1722 45%, #090f16 100%);
+            --panel-bg: rgba(8, 14, 22, 0.72);
+            --panel-border: rgba(141, 189, 255, 0.35);
+            --text-main: #e7f2ff;
+            --text-muted: #9fb6cc;
+            --accent: #4da8ff;
+            --accent-2: #85ffd6;
+            --track: rgba(255, 255, 255, 0.12);
+            --fill: linear-gradient(90deg, #4da8ff 0%, #85ffd6 100%);
+            --radius: 16px;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: #0b1119;
+            color: var(--text-main);
+            font-family: "Avenir Next", "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
+        }
+
+        body {
+            background-image: var(--bg);
+        }
+
+        #shell {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        #canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            outline: none;
+            opacity: 0;
+            transition: opacity 220ms ease-out;
+        }
+
+        #overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            pointer-events: none;
+            transition: opacity 240ms ease-out, visibility 240ms ease-out;
+        }
+
+        #overlay.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .panel {
+            width: min(560px, 100%);
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: var(--radius);
+            box-shadow: 0 18px 56px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            pointer-events: auto;
+            padding: 18px 20px;
+            box-sizing: border-box;
+        }
+
+        .title {
+            margin: 0 0 8px;
+            font-size: 22px;
+            letter-spacing: 0.4px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            margin: 0 0 14px;
+            color: var(--text-muted);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .progress-wrap {
+            width: 100%;
+            height: 10px;
+            border-radius: 999px;
+            background: var(--track);
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--fill);
+            transition: width 120ms linear;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+            min-height: 1.5em;
+        }
+
+        .progress-percent {
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .actions {
+            margin-top: 14px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.16);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .btn-primary {
+            border-color: rgba(133, 255, 214, 0.45);
+            background: linear-gradient(180deg, rgba(77, 168, 255, 0.55), rgba(48, 127, 207, 0.62));
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .error {
+            margin-top: 10px;
+            color: #ffb7b7;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        @media (max-width: 600px) {
+            .panel {
+                padding: 16px;
+            }
+
+            .title {
+                font-size: 18px;
+            }
+
+            .subtitle {
+                font-size: 13px;
+            }
+        }
+    </style>
+    <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+
+</head>
+<body>
+<div id="shell">
+    <canvas id="canvas"></canvas>
+
+    <div id="overlay">
+        <div class="panel">
+            <h1 class="title">小白保衛戰</h1>
+            <p class="subtitle">加载资源中，完成后点击开始进入游戏。</p>
+            <div class="progress-wrap" aria-label="Loading progress">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="progress-percent" class="progress-percent">0%</div>
+            <div id="status" class="status">准备初始化...</div>
+            <div class="actions">
+                <button id="start-btn" class="btn btn-primary" type="button" disabled>开始游戏</button>
+                <button id="fullscreen-btn" class="btn" type="button">全屏</button>
+            </div>
+            <div id="error" class="error"></div>
+        </div>
+    </div>
+</div>
+
+<script src="index.js"></script>
+<script>
+    const canvas = document.getElementById("canvas");
+    const overlay = document.getElementById("overlay");
+    const progressFill = document.getElementById("progress-fill");
+    const progressPercent = document.getElementById("progress-percent");
+    const statusText = document.getElementById("status");
+    const errorText = document.getElementById("error");
+    const startBtn = document.getElementById("start-btn");
+    const fullscreenBtn = document.getElementById("fullscreen-btn");
+
+    const engine = new Engine({"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":7379128,"index.wasm":36145869},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4});
+    let gameStarted = false;
+
+    function setProgress(current, total) {
+        if (!total || total <= 0) {
+            statusText.textContent = "加载中...";
+            progressPercent.textContent = "--%";
+            return;
+        }
+        const ratio = Math.max(0, Math.min(1, current / total));
+        progressFill.style.width = (ratio * 100).toFixed(1) + "%";
+        const percent = Math.round(ratio * 100);
+        progressPercent.textContent = percent + "%";
+        statusText.textContent = "加载中 " + percent + "%";
+    }
+
+    function showError(err) {
+        const message = (err && (err.message || err.toString())) || "未知错误";
+        errorText.textContent = "启动失败: " + message;
+        statusText.textContent = "请刷新页面后重试";
+        startBtn.disabled = false;
+    }
+
+    function hideOverlay() {
+        overlay.classList.add("hidden");
+        canvas.style.opacity = "1";
+    }
+
+    function startGame() {
+        if (gameStarted) {
+            return;
+        }
+        gameStarted = true;
+        startBtn.disabled = true;
+        statusText.textContent = "加载中...";
+
+        engine.startGame({
+            canvas: canvas,
+            onProgress: setProgress,
+            onPrintError: function (text) { console.warn(text); }
+        }).then(function () {
+            statusText.textContent = "已启动";
+            progressFill.style.width = "100%";
+            progressPercent.textContent = "100%";
+            hideOverlay();
+            canvas.focus();
+        }).catch(function (err) {
+            gameStarted = false;
+            showError(err);
+        });
+    }
+
+    function requestFullscreen() {
+        const elem = canvas;
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen();
+        } else if (elem.webkitRequestFullscreen) {
+            elem.webkitRequestFullscreen();
+        }
+    }
+
+    fullscreenBtn.addEventListener("click", requestFullscreen);
+    startBtn.addEventListener("click", function () {
+        startGame();
+    });
+
+    statusText.textContent = "点击开始游戏";
+    startBtn.disabled = false;
+</script>
+</body>
+</html>
+
